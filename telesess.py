@@ -4,12 +4,10 @@ import random
 from telethon.sync import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 
-# Константы (Официальный Telegram Desktop)
 APP_ID = 2040 
 APP_HASH = "b18441a1ff607e10a989891a5462e627"
 APP_VERSION = "6.7.6"
 
-# Списки для рандомизации
 LAPTOP_MODELS = [
     "Dell XPS 13", "Dell Latitude 5420", "HP Spectre x360", "HP Pavilion 15",
     "Lenovo ThinkPad X1 Carbon", "Lenovo IdeaPad 3", "ASUS ZenBook 14",
@@ -57,7 +55,6 @@ def main():
 
     proxy = parse_proxy(proxy_input)
 
-    # Рандомизация параметров устройства
     chosen_device = random.choice(LAPTOP_MODELS)
     chosen_os = random.choice(WINDOWS_VERSIONS)
 
