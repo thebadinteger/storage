@@ -23,3 +23,19 @@ Usage:
 pip install telethon PySocks
 python telesess.py
 ```
+
+### naxnine/  
+Python Control Script for P2P NaxClow Camera (A9 clone)  
+Features:  
+- View video
+- Listen to audio
+- Flip image
+- Turn IR light on/off
+- Settings (most options; I didn't include some)
+- Web interface  
+You need a QR code from the mobile app to log into camera  
+Usage:  
+```shell
+pip install Flask requests pyzbar Pillow
+python naxnine.py
+```
