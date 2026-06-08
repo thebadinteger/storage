@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naxnine Control Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="logo">Naxnine</div>
+        <div class="account-info">
+            <span id="accountHash">Loading...</span>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="actions-bar">
+            <h2>Cameras</h2>
+            <button class="btn btn-primary" onclick="openAddModal()">+ Add Camera</button>
+        </div>
+
+        <div id="cameraGrid" class="camera-grid">
+            <!-- Cameras will be rendered here via JS -->
+            <div class="empty-state">No cameras bound. Click Add Camera to scan a QR code.</div>
+        </div>
+
+        <!-- Stream Overlay -->
+        <div id="streamOverlay" class="stream-overlay" style="display: none;">
+            <div class="stream-container">
+                <div class="stream-header">
+                    <h3 id="streamTitle">Live View</h3>
+                    <button class="btn-close" onclick="closeStream()">×</button>
+                </div>
+                <div class="stream-content">
+                    <img id="streamVideo" src="" alt="Stream Loading..." />
+                    <div id="streamStatus" class="stream-status">Connecting...</div>
+                </div>
+                <div class="stream-controls">
+                    <button id="btnAudio" class="btn btn-action" onclick="toggleAudio()">&#128264; Audio OFF</button>
+                    <button id="btnFlip" class="btn btn-action" onclick="toggleFlip()">&#128260; Flip</button>
+                    <button id="btnIr" class="btn btn-action" onclick="toggleIR()">&#128161; IR Auto</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Camera Modal -->
+        <div id="addModal" class="stream-overlay" style="display: none;">
+            <div class="stream-container" style="max-width: 400px; padding: 1.5rem;">
+                <h3 style="margin-bottom: 1rem;">Add New Camera</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem;">Upload a screenshot of the QR code to bind the
+                    camera.</p>
+                <input type="file" id="qrInput" accept="image/*" style="margin-bottom: 1rem; width: 100%;">
+                <button class="btn btn-primary" style="width: 100%;" onclick="uploadQR()">Upload & Bind</button>
+                <button class="btn btn-action" style="width: 100%; margin-top: 0.5rem;"
+                    onclick="closeAddModal()">Cancel</button>
+                <div id="addStatus" style="margin-top: 1rem; color: var(--accent); text-align: center;"></div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="stream-overlay" style="display: none;">
+            <div class="stream-container"
+                style="max-width: 500px; padding: 1.5rem; max-height: 90vh; overflow-y: auto;">
+                <h3 id="settingsTitle" style="margin-bottom: 1rem;">Camera Settings</h3>
+
+                <div class="setting-group" style="margin-bottom: 1rem;">
+                    <label style="display:block; margin-bottom: 0.5rem; font-size: 0.9rem;">Rename Camera</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="setRename" placeholder="New name"
+                            style="flex:1; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);">
+                        <button class="btn btn-action"
+                            onclick="submitSetting('rename', document.getElementById('setRename').value)">Save</button>
+                    </div>
+                </div>
+
+                <div class="setting-group" style="margin-bottom: 1rem;">
+                    <div class="setting-group" style="margin-bottom: 1rem;">
+                        <label style="display:block; margin-bottom: 0.5rem; font-size: 0.9rem;">Share Camera</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-action" style="flex:1;" onclick="getShareCode(0)">Share
+                                (User)</button>
+                            <button class="btn btn-action" style="flex:1;" onclick="getShareCode(1)">Share
+                                (Admin)</button>
+                        </div>
+                        <div id="shareCodeDisplay" style="margin-top: 1rem; text-align: center;"></div>
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <div class="setting-row">
+                            <label>Network Indicator</label>
+                            <label class="switch">
+                                <input type="checkbox" id="chkInd"
+                                    onchange="submitSetting('network_indicator', this.checked ? 1 : 0)">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="setting-row">
+                            <label>IR Light Auto</label>
+                            <label class="switch">
+                                <input type="checkbox" id="chkIr"
+                                    onchange="submitSetting('ir_light', this.checked ? 1 : 0)">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="setting-row">
+                            <label>Motion Alert</label>
+                            <label class="switch">
+                                <input type="checkbox" id="chkMot"
+                                    onchange="submitSetting('motion_detection', this.checked ? 1 : 0)">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 1rem;">
+                        <label style="display:block; margin-bottom: 0.5rem; font-size: 0.9rem;">Motion Interval</label>
+                        <select id="setMotionInterval"
+                            style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);"
+                            onchange="submitSetting('motion_interval', this.value)">
+                            <option value="" disabled selected>Select interval</option>
+                            <option value="0">30 seconds</option>
+                            <option value="1">1 minute</option>
+                            <option value="2">3 minutes</option>
+                            <option value="3">5 minutes</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 1.5rem;">
+                        <label style="display:block; margin-bottom: 0.5rem; font-size: 0.9rem;">Sensitivity</label>
+                        <select id="setSensitivity"
+                            style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main);"
+                            onchange="submitSetting('sensitivity', this.value)">
+                            <option value="" disabled selected>Select sensitivity</option>
+                            <option value="0">Low</option>
+                            <option value="1">Medium</option>
+                            <option value="2">High</option>
+                        </select>
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1.5rem 0;">
+
+                    <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+                        <button class="btn btn-danger" style="width: 100%;"
+                            onclick="if(confirm('Are you sure you want to reboot the camera?')) submitSetting('reboot', 1)">Reboot
+                            Camera</button>
+                    </div>
+
+                    <button class="btn btn-primary" style="width: 100%;" onclick="closeSettingsModal()">Close</button>
+                    <div id="settingsStatus" style="margin-top: 1rem; color: var(--accent); text-align: center;"></div>
+                </div>
+            </div>
+
+    </main>
+
+    <script>
+        let currentDevCode = null;
+        let audioCtx = null;
+        let audioEnabled = false;
+        let nextPlayTime = 0;
+        const SAMPLE_RATE = 8000;
+        let audioFetchTimeout = null;
+        async function loadConfig() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+
+                // Update Account info
+                if (config.user && config.user.account) {
+                    // Show short version of account hash
+                    const acc = config.user.account;
+                    document.getElementById('accountHash').textContent =
+                        acc.substring(0, 8) + '...' + acc.substring(acc.length - 4);
+                } else {
+                    document.getElementById('accountHash').textContent = "Not logged in";
+                }
+
+                // Render cameras
+                const grid = document.getElementById('cameraGrid');
+                if (config.cameras && Object.keys(config.cameras).length > 0) {
+                    grid.innerHTML = '';
+                    for (const [code, cam] of Object.entries(config.cameras)) {
+                        grid.innerHTML += `
+                            <div class="camera-card">
+                                <div class="preview-area" onclick="openStream('${code}', '${cam.deviceName || code}')" style="cursor: pointer; position: relative;">
+                                    <img src="/api/thumbnail/${code}?t=${Date.now()}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                                    <div class="placeholder-stream" style="display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center;">
+                                        <div>Click to Connect</div>
+                                        <small>${code}</small>
+                                    </div>
+                                </div>
+                                <div class="card-info">
+                                    <h3 class="cam-name">${cam.deviceName || code}</h3>
+                                    <div class="status-indicator ${cam.state == 1 ? 'online' : 'offline'}"></div>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn-sm btn-action" onclick="openSettings('${code}', '${cam.deviceName || code}')">Settings</button>
+                                    <button class="btn-sm btn-action" onclick="alert('Alarms not implemented yet. Waiting for API dumps.')">Alarms</button>
+                                    <button class="btn-sm btn-action">SD Card</button>
+                                    <button class="btn-sm btn-danger" onclick="deleteCamera('${code}')">Delete</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load config", e);
+            }
+        }
+
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'flex';
+            document.getElementById('addStatus').textContent = '';
+            document.getElementById('qrInput').value = '';
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+
+        async function uploadQR() {
+            const input = document.getElementById('qrInput');
+            if (!input.files || input.files.length === 0) {
+                document.getElementById('addStatus').textContent = 'Please select an image.';
+                return;
+            }
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('qr_image', file);
+
+            document.getElementById('addStatus').textContent = 'Scanning...';
+            try {
+                const res = await fetch('/api/bind_qr', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('addStatus').textContent = 'Bound successfully!';
+                    setTimeout(() => {
+                        closeAddModal();
+                        loadConfig();
+                    }, 1500);
+                } else {
+                    document.getElementById('addStatus').textContent = 'Error: ' + data.error;
+                }
+            } catch (e) {
+                document.getElementById('addStatus').textContent = 'Upload failed.';
+            }
+        }
+
+        async function openStream(code, name) {
+            currentDevCode = code;
+            document.getElementById('streamTitle').textContent = "Live: " + name;
+            document.getElementById('streamOverlay').style.display = 'flex';
+            document.getElementById('streamStatus').style.display = 'block';
+            document.getElementById('streamStatus').textContent = 'Connecting via P2P...';
+            document.getElementById('streamVideo').src = '';
+
+            try {
+                const res = await fetch('/api/connect/' + code, { method: 'POST' });
+                const result = await res.json();
+                if (result.success) {
+                    document.getElementById('streamStatus').style.display = 'none';
+                    document.getElementById('streamVideo').src = '/api/stream/' + code;
+                } else {
+                    document.getElementById('streamStatus').textContent = 'Error: ' + result.error;
+                }
+            } catch (e) {
+                document.getElementById('streamStatus').textContent = 'Connection failed';
+            }
+        }
+
+        function closeStream() {
+            document.getElementById('streamOverlay').style.display = 'none';
+            document.getElementById('streamVideo').src = '';
+            currentDevCode = null;
+            if (audioEnabled) {
+                toggleAudio(); // turn it off
+            }
+        }
+
+        async function toggleAudio() {
+            if (!currentDevCode) return;
+            let btn = document.getElementById('btnAudio');
+
+            if (!audioEnabled) {
+                await fetch('/api/audio_reset/' + currentDevCode);
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+                audioEnabled = true;
+                nextPlayTime = 0;
+                btn.classList.add('active');
+                btn.innerHTML = '&#128266; Audio ON';
+                fetchAudio();
+            } else {
+                audioEnabled = false;
+                btn.classList.remove('active');
+                btn.innerHTML = '&#128264; Audio OFF';
+                if (audioCtx) {
+                    audioCtx.close();
+                    audioCtx = null;
+                }
+                if (audioFetchTimeout) clearTimeout(audioFetchTimeout);
+            }
+        }
+
+        async function fetchAudio() {
+            if (!audioEnabled || !currentDevCode) return;
+            try {
+                const response = await fetch('/api/audio/' + currentDevCode);
+                if (!response.ok) { audioFetchTimeout = setTimeout(fetchAudio, 100); return; }
+                const arrayBuf = await response.arrayBuffer();
+                if (arrayBuf.byteLength > 0 && audioCtx) {
+                    const int16 = new Int16Array(arrayBuf);
+                    const audioData = audioCtx.createBuffer(1, int16.length, SAMPLE_RATE);
+                    const channelData = audioData.getChannelData(0);
+                    for (let i = 0; i < int16.length; i++) {
+                        channelData[i] = int16[i] / 32768.0;
+                    }
+                    const source = audioCtx.createBufferSource();
+                    source.buffer = audioData;
+                    source.connect(audioCtx.destination);
+
+                    const now = audioCtx.currentTime;
+                    if (nextPlayTime < now || nextPlayTime > now + 0.3) {
+                        nextPlayTime = now;
+                    }
+                    source.start(nextPlayTime);
+                    nextPlayTime += audioData.duration;
+                }
+            } catch (e) { }
+            audioFetchTimeout = setTimeout(fetchAudio, 100);
+        }
+
+        async function toggleFlip() {
+            if (!currentDevCode) return;
+            let btn = document.getElementById('btnFlip');
+            btn.disabled = true;
+            try {
+                const resp = await fetch('/api/flip/' + currentDevCode, { method: 'POST' });
+                const data = await resp.json();
+                if (data.flipped) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '&#128260; Flipped';
+                } else {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '&#128260; Flip';
+                }
+            } catch (e) { }
+            btn.disabled = false;
+        }
+
+        let irState = 0;
+        async function toggleIR() {
+            if (!currentDevCode) return;
+            let btn = document.getElementById('btnIr');
+            // cycle: 0 -> 1 -> 2 -> 0
+            irState = (irState + 1) % 3;
+            try {
+                await fetch('/api/ir/' + currentDevCode, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ state: irState })
+                });
+                const labels = ['&#128161; IR Off', '&#128161; IR On', '&#128161; IR Auto'];
+                btn.innerHTML = labels[irState];
+                if (irState === 1) btn.classList.add('active');
+                else btn.classList.remove('active');
+            } catch (e) { }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadConfig);
+        let settingsDevCode = null;
+
+        async function openSettings(code, name) {
+            settingsDevCode = code;
+            document.getElementById('settingsTitle').textContent = "Settings: " + (name || code);
+            document.getElementById('shareCodeDisplay').innerHTML = '';
+            document.getElementById('settingsStatus').textContent = 'Loading settings...';
+            document.getElementById('settingsModal').style.display = 'flex';
+
+            // Initial reset of UI
+            document.getElementById('setRename').value = name || code;
+            document.getElementById('setMotionInterval').value = '';
+            document.getElementById('setSensitivity').value = '';
+
+            document.getElementById('chkInd').checked = false;
+            document.getElementById('chkIr').checked = false;
+            document.getElementById('chkMot').checked = false;
+
+            try {
+                const res = await fetch('/api/camera_info/' + code);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    const info = data.data;
+                    document.getElementById('setRename').value = info.devicesName || name || code;
+                    if (info.remark) {
+                        try {
+                            const remark = (typeof info.remark === 'string') ? JSON.parse(info.remark) : info.remark;
+
+                            if (remark.instLed !== undefined) document.getElementById('chkInd').checked = remark.instLed === 1;
+                            if (remark.IrLed !== undefined) document.getElementById('chkIr').checked = remark.IrLed === 1;
+                            if (remark.pirAlert !== undefined) document.getElementById('chkMot').checked = remark.pirAlert === 1;
+
+                            if (remark.moveGrade !== undefined) document.getElementById('setMotionInterval').value = remark.moveGrade;
+                            if (remark.pirGrade !== undefined) document.getElementById('setSensitivity').value = remark.pirGrade;
+                        } catch (e) { console.error("Error parsing remark", e); }
+                    }
+                    document.getElementById('settingsStatus').textContent = '';
+                } else {
+                    document.getElementById('settingsStatus').textContent = 'Failed to load settings state.';
+                }
+            } catch (e) {
+                document.getElementById('settingsStatus').textContent = 'Error loading settings state.';
+            }
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        async function submitSetting(action, value) {
+            if (!settingsDevCode) return;
+            document.getElementById('settingsStatus').textContent = 'Saving...';
+            try {
+                const res = await fetch('/api/settings/' + settingsDevCode, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, value })
+                });
+                const data = await res.json();
+                if (data.code === 200 || data.success) {
+                    document.getElementById('settingsStatus').textContent = 'Saved successfully.';
+                    if (action === 'rename') loadConfig();
+
+                    if (action === 'network_indicator') {
+                        const chk = document.getElementById('chkInd');
+                        if (chk) chk.checked = value === 1;
+                    } else if (action === 'ir_light') {
+                        const chk = document.getElementById('chkIr');
+                        if (chk) chk.checked = value === 1;
+                    } else if (action === 'motion_detection') {
+                        const chk = document.getElementById('chkMot');
+                        if (chk) chk.checked = value === 1;
+                    }
+                } else {
+                    document.getElementById('settingsStatus').textContent = 'Error: ' + (data.message || data.error || JSON.stringify(data));
+                }
+            } catch (e) {
+                document.getElementById('settingsStatus').textContent = 'Request failed.';
+            }
+        }
+
+        async function getShareCode(isAdmin) {
+            if (!settingsDevCode) return;
+            document.getElementById('shareCodeDisplay').innerHTML = 'Generating QR...';
+            try {
+                const res = await fetch(`/api/share/${settingsDevCode}?admin=${isAdmin}`);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=10&data=${encodeURIComponent(data.data)}`;
+                    document.getElementById('shareCodeDisplay').innerHTML = `
+                        <img src="${qrUrl}" alt="Share QR Code" style="border-radius: 8px; border: 1px solid var(--border-color); width: 250px; height: 250px;">
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">Scan this QR in the app to share.</div>
+                    `;
+                } else {
+                    document.getElementById('shareCodeDisplay').textContent = 'Failed to get code.';
+                }
+            } catch (e) {
+                document.getElementById('shareCodeDisplay').textContent = 'Request failed.';
+            }
+        }
+
+        async function deleteCamera(code) {
+            if (!confirm(`Are you sure you want to delete camera ${code}?`)) return;
+            try {
+                const res = await fetch(`/api/delete_camera/${code}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.code === 200 || data.success) {
+                    loadConfig();
+                } else {
+                    alert("Failed to delete camera: " + (data.message || data.error));
+                }
+            } catch (e) {
+                alert("Request failed.");
+            }
+        }
+
+    </script>
+</body>
+
+</html>
