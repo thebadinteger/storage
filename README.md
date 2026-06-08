@@ -1,11 +1,11 @@
-### aisc.py  
+### 13.04.2026 aisc.py  
 Python AI Studio .json cleaner  
 Usage:  
 ```shell
 python aisc.py -h
 ```  
 
-### tgalert.py  
+### 01.05.2026 tgalert.py  
 Python script for obtaining a badge ("Darwin Award")  
 `%s uses an unofficial Telegram client — messages to this user may be less secure.`  
 Usage:  
@@ -15,7 +15,7 @@ python tgalert.py
 ```  
 You can remove the badge by ending the script session in Settings > Privacy and Security > Active sessions  
 
-### telesess.py  
+### 23.04.2026 telesess.py  
 Python script for creating a Telethon .session file on TDesktop API Keys  
 (Supports SOCKS5 Proxies)  
 Usage:  
@@ -24,7 +24,7 @@ pip install telethon PySocks
 python telesess.py
 ```
 
-### naxnine/  
+### 10.03.2026 naxnine/  
 Python Control Script for P2P NaxClow Camera (A9 clone)  
 Features:  
 - View video
